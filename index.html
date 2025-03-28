@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=utf-8 />
+<title>Ski Resort Choropleth Map</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+<style>
+  body {
+    margin:0;
+    padding:0;
+    font-family:
+    sans-serif;
+    }
+
+  h1 {
+    position: absolute;
+    left: 50px;
+    top: 10px;
+    padding: 8px 2%;
+    margin: 0;
+    background: rgba(255,121,0,0.8);
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    border-radius: 3px;
+    color: whitesmoke;
+    font-size: 1.5em;
+    z-index: 800;
+    }
+
+  #map {
+    position:absolute;
+    top:0;
+    bottom:0;
+    width:1920px;
+    height: 953px;
+   }
+
+   .legend {
+    background: white;
+    padding: 10px 15px;
+    line-height: 1.5;
+    font-size: 14px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  .legend-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    display: block;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 5px 0;
+  }
+
+  .legend-item i {
+    display: inline-block;
+    border-radius: 50%;
+    background: #ff7900;
+    margin-right: 10px;
+  }
+
+  section {
+			position: absolute;
+			bottom: 20px;
+			left: 5px;
+			width: 280px;
+			margin: 20px auto;
+			padding: 0 15px;
+			background: rgba(256, 256, 256);
+			border: 1px solid grey;
+			border-radius: 3px;
+			z-index: 800;
+		}
+
+</style>
+
+</head>
+<body>
+    <div id='map'></div>
+    <h1>United States Ski Resorts, 2022</h1>
+
+    <section>
+      <h2>About This Map</h2>
+  
+      <p>This webmap shows a choropleth map, with each circle representing how many ski resorts are in each state. The state with the highest number of ski resorts is New York with 52, and the state with the loest number of ski resorts is Tennessee with only 1.</p>
+    </section>
+
+
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.min.js"></script>
+
+
+<script>
+
+var map = L.map('map', {
+        center: [39.5, -95.3],
+        zoom: 4
+    });
+
+var Stadia_StamenTonerBackground = L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_toner_background/{z}/{x}/{y}{r}.{ext}', {
+	minZoom: 0,
+	maxZoom: 20,
+	attribution: '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://www.stamen.com/" target="_blank">Stamen Design</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+	ext: 'png'
+}).addTo(map);
+
+states = L.geoJson.ajax("assets/data.geojson",{
+    attribution: 'Data: <a href="https://www.onthesnow.com/news/what-state-has-the-most-ski-resorts/">On the Snow</a>, Map: Nicholas Kovalcik',
+    pointToLayer: function (feature, x){
+      var circle = L.circleMarker(x, {
+        color: '#ff7900',
+        opacity: 1,
+        weight: 2,
+        fillColor: '#ff7900',
+        fillOpacity: .6,
+        radius: calcRadius(feature.properties.resorts)
+      });
+
+      circle.bindTooltip(function (layer) {
+        return feature.properties.name + "<br>Resorts: " + feature.properties.resorts;
+      }, {
+        permanent: false,
+        direction: 'top',
+        offset: [0, -10],
+        opacity: 0.7
+      });
+      
+      circle.on({
+        mouseover: function(e){
+          this.setStyle({color: 'blue',fillColor: 'blue'});
+          this.openTooltip(); 
+        },
+        mouseout: function(e){
+          this.setStyle({color:'#ff7900', fillColor: '#ff7900'});
+          this.closeTooltip(); 
+        }
+      });
+
+      return circle;
+    }
+});
+
+var minValue = 1;
+var minRadius = 4;
+
+function calcRadius(val) {
+        return 1.00 * Math.pow(val/minValue,.5) * minRadius;
+        }
+
+        var legend = L.control({position: 'bottomright'});
+
+legend.onAdd = function (map) {
+    var div = L.DomUtil.create('div', 'legend'),
+        grades = [1, 5, 10, 20, 50],  // Example values for ski resorts
+        labels = [];
+
+    div.innerHTML = '<span class="legend-title">Ski Resorts</span>';
+
+    for (var i = 0; i < grades.length; i++) {
+        var size = calcRadius(grades[i]);
+
+        labels.push(
+            '<div class="legend-item">' +
+            '<i style="width:' + size * 2 + 'px; height:' + size * 2 + 'px;"></i>' +
+            grades[i] + (grades[i + 1] ? ' - ' + grades[i + 1] : '+') +
+            '</div>'
+        );
+    }
+
+    div.innerHTML += labels.join('');
+    return div;
+};
+
+legend.addTo(map);
+     
+L.control.scale({position: 'bottomleft'}).addTo(map);
+
+states.addTo(map);
+
+
+
+</script>
+</body>
+</html>
